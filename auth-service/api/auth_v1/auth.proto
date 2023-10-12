@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package api;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "auth_v1-service/pkg/auth_v1;auth_v1";
+
+service Auth {
+    rpc Login (AuthRequest) returns (Tokens) {}
+    rpc Register (RegisterRequest) returns (Tokens) {}
+    rpc RefreshToken (RefreshTokenRequest) returns (Tokens) {}
+}
+
+message AuthRequest {
+    string email = 1;
+    string password = 2;
+}
+
+message RegisterRequest {
+    User user = 1;
+}
+
+message RefreshTokenRequest {
+    string refreshToken = 1;
+}
+
+message Tokens {
+    string token = 1;
+    string refreshToken = 2;
+}
+
+message User {
+    string uuid = 1;
+    string email = 2;
+    string username = 3;
+    string password = 4;
+    string roles = 5;
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp updated_at = 7;
+}

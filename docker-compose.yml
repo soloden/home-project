@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+#  auth-service:
+#    build: ./auth-service/
+#    depends_on:
+#      - mongo
+#    ports:
+#      - "9999:9000"
+
+  mongo:
+    image: mongo
+    ports:
+      - 27017:27017
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=user
+      - MONGO_INITDB_ROOT_PASSWORD=pass
+    volumes:
+      - ./mongodb/data:/data/db
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    environment:
+      ME_CONFIG_MONGODB_URL: "mongodb://user:pass@mongo:27017/?unhandled-rejections=strict"
+      ME_CONFIG_MONGODB_ADMINUSERNAME: user
+      ME_CONFIG_MONGODB_ADMINPASSWORD: pass
+    depends_on:
+      - mongo
+    ports:
+      - 8084:8081

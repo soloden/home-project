@@ -1,3 +1,5 @@
+.PHONY:
+
 generate:
 	make generate-grpc
 

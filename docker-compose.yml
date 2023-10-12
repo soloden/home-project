@@ -1,12 +1,12 @@
 version: '3'
 
 services:
-#  auth-service:
-#    build: ./auth-service/
-#    depends_on:
-#      - mongo
-#    ports:
-#      - "9999:9000"
+  auth-service:
+    build: ./auth-service/
+    depends_on:
+      - mongo
+    ports:
+      - "9999:9000"
 
   mongo:
     image: mongo

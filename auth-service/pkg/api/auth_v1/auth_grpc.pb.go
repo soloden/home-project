@@ -19,7 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthClient interface {
 	Login(ctx context.Context, in *AuthRequest, opts ...grpc.CallOption) (*Tokens, error)
-	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*Tokens, error)
+	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	RefreshToken(ctx context.Context, in *RefreshTokenRequest, opts ...grpc.CallOption) (*Tokens, error)
 }
 
@@ -40,8 +40,8 @@ func (c *authClient) Login(ctx context.Context, in *AuthRequest, opts ...grpc.Ca
 	return out, nil
 }
 
-func (c *authClient) Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*Tokens, error) {
-	out := new(Tokens)
+func (c *authClient) Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error) {
+	out := new(RegisterResponse)
 	err := c.cc.Invoke(ctx, "/api.Auth/Register", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func (c *authClient) RefreshToken(ctx context.Context, in *RefreshTokenRequest, 
 // for forward compatibility
 type AuthServer interface {
 	Login(context.Context, *AuthRequest) (*Tokens, error)
-	Register(context.Context, *RegisterRequest) (*Tokens, error)
+	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	RefreshToken(context.Context, *RefreshTokenRequest) (*Tokens, error)
 	mustEmbedUnimplementedAuthServer()
 }
@@ -75,7 +75,7 @@ type UnimplementedAuthServer struct {
 func (UnimplementedAuthServer) Login(context.Context, *AuthRequest) (*Tokens, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
 }
-func (UnimplementedAuthServer) Register(context.Context, *RegisterRequest) (*Tokens, error) {
+func (UnimplementedAuthServer) Register(context.Context, *RegisterRequest) (*RegisterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Register not implemented")
 }
 func (UnimplementedAuthServer) RefreshToken(context.Context, *RefreshTokenRequest) (*Tokens, error) {

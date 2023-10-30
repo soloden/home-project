@@ -8,7 +8,7 @@ option go_package = "auth_v1-service/pkg/auth_v1;auth_v1";
 
 service Auth {
     rpc Login (AuthRequest) returns (Tokens) {}
-    rpc Register (RegisterRequest) returns (Tokens) {}
+    rpc Register (RegisterRequest) returns (RegisterResponse) {}
     rpc RefreshToken (RefreshTokenRequest) returns (Tokens) {}
 }
 
@@ -18,6 +18,10 @@ message AuthRequest {
 }
 
 message RegisterRequest {
+    User user = 1;
+}
+
+message RegisterResponse {
     User user = 1;
 }
 

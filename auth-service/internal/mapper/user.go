@@ -4,6 +4,7 @@ import (
 	"auth-service/internal/model"
 	"auth-service/internal/repository/user"
 	api "auth-service/pkg/api/auth_v1"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"strings"
 )
 
@@ -14,6 +15,20 @@ func ToUserFromGRPSRequest(info *api.User) *model.User {
 		Username: info.GetUsername(),
 		Password: info.GetPassword(),
 		Roles:    roleList,
+	}
+}
+
+func ToGRPCResponseUserFromModel(user *model.User) *api.RegisterResponse {
+	role := strings.Join(user.Roles, ",")
+	return &api.RegisterResponse{
+		User: &api.User{
+			Uuid:      user.UUID,
+			Username:  user.Username,
+			Email:     user.Email,
+			Roles:     role,
+			CreatedAt: timestamppb.New(user.CreatedAt),
+			UpdatedAt: timestamppb.New(user.UpdatedAt),
+		},
 	}
 }
 

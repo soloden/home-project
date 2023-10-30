@@ -45,7 +45,7 @@ func (as *AuthServer) Login(ctx context.Context, req *api.AuthRequest) (*api.Tok
 	}, nil
 }
 
-func (as *AuthServer) Register(ctx context.Context, req *api.RegisterRequest) (*api.Tokens, error) {
+func (as *AuthServer) Register(ctx context.Context, req *api.RegisterRequest) (*api.RegisterResponse, error) {
 	logger.ContextWithLogger(ctx, zap.L())
 	email := req.GetUser().GetEmail()
 	if email == "" {
@@ -62,8 +62,7 @@ func (as *AuthServer) Register(ctx context.Context, req *api.RegisterRequest) (*
 		return nil, err
 	}
 
-	response := &api.Tokens{Token: res["token"], RefreshToken: res["refreshToken"]}
-	return response, nil
+	return mapper.ToGRPCResponseUserFromModel(res), nil
 }
 
 func (as *AuthServer) RefreshToken(ctx context.Context, req *api.RefreshTokenRequest) (*api.Tokens, error) {

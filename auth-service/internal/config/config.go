@@ -16,6 +16,7 @@ type Config struct {
 	}
 	App struct {
 		StorageType string `env:"APP_STORAGE" env-default:"mongodb"`
+		SecretKey   string `env:SECRET_KEY env-default:"my_secret_key"`
 	}
 }
 

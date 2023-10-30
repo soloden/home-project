@@ -26,7 +26,7 @@ func NewUserService(userRepository repository.UserRepository) *userService {
 	}
 }
 
-func (us *userService) Create(ctx context.Context, user *model.User) (map[string]string, error) {
+func (us *userService) Create(ctx context.Context, user *model.User) (*model.User, error) {
 	log := logger.LoggerFromContext(ctx)
 	userUUID, err := uuid.NewUUID()
 	if err != nil {
@@ -54,13 +54,7 @@ func (us *userService) Create(ctx context.Context, user *model.User) (map[string
 		return nil, status.Error(codes.Internal, "something went wrong, please try later")
 	}
 
-	res, err := us.generateTokens(ctx, mapper.ToUserFromRepository(savedUser))
-	if err != nil {
-		log.Error("generate token for user", zap.Error(err))
-		return nil, status.Error(codes.Internal, "something went wrong, please try later")
-	}
-
-	return res, nil
+	return mapper.ToUserFromRepository(savedUser), nil
 }
 
 func (us *userService) Auth(ctx context.Context, email, password string) (map[string]string, error) {

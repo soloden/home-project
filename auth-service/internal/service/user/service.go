@@ -5,15 +5,16 @@ import (
 	"auth-service/internal/model"
 	"auth-service/internal/repository"
 	"auth-service/internal/service/auth"
+	"auth-service/internal/service/generation"
 	"auth-service/pkg/logger"
 	"context"
 	"fmt"
-	"github.com/google/uuid"
+	"time"
+
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"time"
 )
 
 type userService struct {
@@ -28,18 +29,12 @@ func NewUserService(userRepository repository.UserRepository) *userService {
 
 func (us *userService) Create(ctx context.Context, user *model.User) (*model.User, error) {
 	log := logger.LoggerFromContext(ctx)
-	userUUID, err := uuid.NewUUID()
-	if err != nil {
-		log.Error("creating UUID problem", zap.Error(err))
-		return nil, status.Error(codes.Internal, "something went wrong, please try later")
-	}
 
 	checkUser := us.userRepository.GetByEmail(ctx, user.Email)
 	if checkUser != nil {
 		return nil, status.Error(codes.AlreadyExists, "user already exists")
 	}
 
-	user.UUID = userUUID.String()
 	hashPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 15)
 	if err != nil {
 		log.Error("hashing user password", zap.Error(err))
@@ -49,7 +44,7 @@ func (us *userService) Create(ctx context.Context, user *model.User) (*model.Use
 	repUser := mapper.ToUserFromModel(user)
 	repUser.PasswordHash = hashPassword
 
-	savedUser := us.userRepository.Create(ctx, repUser)
+	savedUser := us.userRepository.Create(ctx, repUser, generation.UUIDGeneration{})
 	if savedUser == nil {
 		return nil, status.Error(codes.Internal, "something went wrong, please try later")
 	}

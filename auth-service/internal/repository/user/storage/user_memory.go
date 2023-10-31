@@ -3,6 +3,7 @@ package storage
 import (
 	"auth-service/internal/model"
 	"auth-service/internal/repository/user"
+	"auth-service/internal/service/generation"
 	"context"
 	"fmt"
 	"sync"
@@ -19,8 +20,9 @@ func NewMemoryRepository() *memoryRepository {
 	}
 }
 
-func (r *memoryRepository) Create(_ context.Context, mUser *user.User) *user.User {
+func (r *memoryRepository) Create(ctx context.Context, mUser *user.User, idGen generation.IdGenerator) *user.User {
 	data := mUser
+	data.UUID = idGen.Generate(ctx)
 
 	r.mutex.Lock()
 	defer r.mutex.Unlock()

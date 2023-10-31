@@ -4,14 +4,16 @@ import (
 	"auth-service/internal/config"
 	"auth-service/internal/model"
 	"auth-service/internal/repository/user"
+	"auth-service/internal/service/generation"
 	"auth-service/pkg/logger"
 	pkgStorage "auth-service/pkg/storage/mongodb"
 	"context"
 	"errors"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
-	"time"
 )
 
 type mongodbRepository struct {
@@ -25,7 +27,7 @@ func NewMongodbRepository(cfg *config.Config, mongodb *pkgStorage.MongoDB) *mong
 	}
 }
 
-func (r *mongodbRepository) Create(ctx context.Context, user *user.User) *user.User {
+func (r *mongodbRepository) Create(ctx context.Context, user *user.User, idGen generation.IdGenerator) *user.User {
 	log := logger.LoggerFromContext(ctx)
 	if user.CreatedAt.IsZero() {
 		user.CreatedAt = time.Now()
@@ -35,6 +37,13 @@ func (r *mongodbRepository) Create(ctx context.Context, user *user.User) *user.U
 		user.CreatedAt = time.Now()
 	}
 
+	uuid := idGen.Generate(ctx)
+	if uuid == "" {
+		log.Error("generated UUID is empty")
+		return nil
+	}
+
+	user.UUID = uuid
 	bsonData, err := bson.Marshal(user)
 	if err != nil {
 		log.Error("marshaling for save", zap.Error(err))

@@ -11,7 +11,7 @@ type Config struct {
 		Addr string `env:"HTTP_PORT" env-default:":9000"`
 	}
 	MongoDB struct {
-		URL      string `env:"MONGODB_URL" env-default:"mongodb://user:pass@mongo:27017/"`
+		URL      string `env:"MONGODB_URL" env-default:"mongodb://user:pass@localhost:27017/"`
 		Database string `env:"MONGODB_DATABASE" env-default:"test"`
 	}
 	App struct {

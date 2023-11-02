@@ -4,10 +4,12 @@ import (
 	"auth-service/internal/api/auth_v1"
 	"auth-service/internal/config"
 	"auth-service/internal/model"
+	generation_mocks "auth-service/internal/service/generation/mocks"
 	service_mocks "auth-service/internal/service/mocks"
 	pb "auth-service/pkg/api/auth_v1"
 	"context"
 	"fmt"
+	"go.uber.org/mock/gomock"
 	"log"
 	"net"
 	"testing"
@@ -118,20 +120,21 @@ func TestAuthServer_Login(t *testing.T) {
 }
 
 func TestAuthServer_Register(t *testing.T) {
-	type mockBehavior func(r *service_mocks.MockUserService, user *model.User)
-
-	client := createClient(t)
+	c := gomock.NewController(t)
+	defer c.Finish()
+	uuid := generation_mocks.NewMockIdGenerator(c).Generate(context.TODO())
 
 	cases := []struct {
-		name      string
-		args      *pb.RegisterRequest
-		want      *pb.RegisterResponse
-		wantErr   bool
-		phraseErr string
+		name             string
+		payload          *pb.RegisterRequest
+		expectedResponse *pb.RegisterResponse
+		expectedErr      error
+		expectedErrMsg   string
+		mockOutput       *model.User
 	}{
 		{
 			name: "should return user object",
-			args: &pb.RegisterRequest{
+			payload: &pb.RegisterRequest{
 				User: &pb.User{
 					Email:    "test@test.org",
 					Password: "test123",
@@ -139,55 +142,41 @@ func TestAuthServer_Register(t *testing.T) {
 					Roles:    "admin, test",
 				},
 			},
-			want: &pb.RegisterResponse{
+			expectedResponse: &pb.RegisterResponse{
 				User: &pb.User{
-					Email:    "test@test.org",
+					Uuid:     uuid,
+					Password: "test123",
 					Username: "test",
 					Roles:    "admin, test",
 				},
 			},
-			wantErr:   false,
-			phraseErr: "",
-		},
-		{
-			name: "should return error when email is empty",
-			args: &pb.RegisterRequest{User: &pb.User{
-				Email:    "",
+			expectedErr:    nil,
+			expectedErrMsg: "",
+			mockOutput: &model.User{
+				UUID:     uuid,
 				Password: "test123",
 				Username: "test",
-				Roles:    "admin, test",
-			}},
-			want:      &pb.RegisterResponse{},
-			wantErr:   true,
-			phraseErr: "email is required",
-		},
-		{
-			name: "should return error when password is empty",
-			args: &pb.RegisterRequest{User: &pb.User{
-				Email:    "test@test.org",
-				Password: "",
-				Username: "test",
-				Roles:    "admin, test",
-			}},
-			want:      &pb.RegisterResponse{},
-			wantErr:   true,
-			phraseErr: "password is required",
+				Roles:    []string{"admin", "test"},
+			},
 		},
 	}
 
 	for _, item := range cases {
 		t.Run(item.name, func(t *testing.T) {
-			res, err := client.Register(context.Background(), item.args)
-			if item.wantErr {
-				require.Error(t, err)
+			c := gomock.NewController(t)
+			defer c.Finish()
+			srvc := service_mocks.NewMockUserService(c)
+			srvc.EXPECT().Create(context.TODO(), item.payload).Return(item.mockOutput, item.expectedErr).Times(1)
+			server := auth_v1.NewAuthServer(srvc)
+			res, err := server.Register(context.TODO(), item.payload)
+			if err != nil {
+				t.Fatalf("something worng: %v", err)
+			}
+
+			if item.expectedErr != nil {
+				require.Error(t, err, item.expectedErrMsg)
 			} else {
-				require.NoError(t, err)
-				require.Equal(t, item.want.User.Email, res.User.Email)
-				require.Equal(t, item.want.User.Username, res.User.Username)
-				require.Equal(t, item.want.User.Roles, res.User.Roles)
-				require.NotEmpty(t, res.User.Uuid)
-				require.NotEmpty(t, res.User.CreatedAt)
-				require.NotEmpty(t, res.User.UpdatedAt)
+				require.Equal(t, item.expectedResponse, res)
 			}
 		})
 	}

@@ -1,7 +1,6 @@
 package auth_v1
 
 import (
-	"auth-service/internal/mapper"
 	"auth-service/internal/service"
 	api "auth-service/pkg/api/auth_v1"
 	"auth-service/pkg/logger"
@@ -24,14 +23,8 @@ func NewAuthServer(service service.UserService) *AuthServer {
 
 func (as *AuthServer) Login(ctx context.Context, req *api.AuthRequest) (*api.Tokens, error) {
 	logger.ContextWithLogger(ctx, zap.L())
-	email := req.GetEmail()
-	if email == "" {
-		return nil, status.Error(codes.InvalidArgument, "email is required")
-	}
-
-	password := req.GetPassword()
-	if password == "" {
-		return nil, status.Error(codes.InvalidArgument, "password is required")
+	if err := as.ValidateAuthRequest(req); err != nil {
+		return nil, err
 	}
 
 	res, err := as.userService.Auth(ctx, req.GetEmail(), req.GetPassword())
@@ -47,22 +40,18 @@ func (as *AuthServer) Login(ctx context.Context, req *api.AuthRequest) (*api.Tok
 
 func (as *AuthServer) Register(ctx context.Context, req *api.RegisterRequest) (*api.RegisterResponse, error) {
 	logger.ContextWithLogger(ctx, zap.L())
-	email := req.GetUser().GetEmail()
-	if email == "" {
-		return nil, status.Error(codes.InvalidArgument, "email is required")
+	if err := as.ValidateRegisterRequest(req); err != nil {
+		return nil, err
 	}
 
-	password := req.GetUser().GetPassword()
-	if password == "" {
-		return nil, status.Error(codes.InvalidArgument, "password is required")
-	}
-
-	res, err := as.userService.Create(ctx, mapper.ToUserFromGRPSRequest(req.GetUser()))
+	user := as.RegisterRequestToDTO(req)
+	_, err := as.userService.Create(ctx, &user)
 	if err != nil {
 		return nil, err
 	}
 
-	return mapper.ToGRPCResponseUserFromModel(res), nil
+	res := as.RegisterResponseFromDTO(&user)
+	return &res, nil
 }
 
 func (as *AuthServer) RefreshToken(ctx context.Context, req *api.RefreshTokenRequest) (*api.Tokens, error) {

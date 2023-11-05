@@ -26,7 +26,7 @@ func NewUserService(userRepository repository.UserRepository) *userService {
 	}
 }
 
-func (us *userService) Create(ctx context.Context, user *model.User) (*model.User, error) {
+func (us *userService) Create(ctx context.Context, user *model.User, idGen generation.IdGenerator) (*model.User, error) {
 	log := logger.LoggerFromContext(ctx)
 
 	checkUser := us.userRepository.GetByEmail(ctx, user.Email)
@@ -42,7 +42,14 @@ func (us *userService) Create(ctx context.Context, user *model.User) (*model.Use
 
 	user.PasswordHash = hashPassword
 
-	err = us.userRepository.Create(ctx, user, generation.UUIDGeneration{})
+	uuid := idGen.Generate(ctx)
+	if uuid == "" {
+		log.Error("generated UUID is empty")
+		return nil, status.Error(codes.Internal, "something went wrong, please try later")
+	}
+	user.UUID = uuid
+
+	err = us.userRepository.Create(ctx, user)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "something went wrong, please try later")
 	}

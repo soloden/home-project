@@ -3,7 +3,6 @@ package storage
 import (
 	"auth-service/internal/config"
 	"auth-service/internal/model"
-	"auth-service/internal/service/generation"
 	"auth-service/pkg/logger"
 	pkgStorage "auth-service/pkg/storage/mongodb"
 	"context"
@@ -27,23 +26,14 @@ func NewMongodbRepository(cfg *config.Config, mongodb *pkgStorage.MongoDB) *mong
 	}
 }
 
-func (r *mongodbRepository) Create(ctx context.Context, user *model.User, idGen generation.IdGenerator) error {
+func (r *mongodbRepository) Create(ctx context.Context, user *model.User) error {
 	log := logger.LoggerFromContext(ctx)
 	if user.CreatedAt.IsZero() {
 		user.CreatedAt = time.Now()
 	}
 
-	if user.UpdatedAt.IsZero() {
-		user.CreatedAt = time.Now()
-	}
+	user.UpdatedAt = time.Now()
 
-	uuid := idGen.Generate(ctx)
-	if uuid == "" {
-		log.Error("generated UUID is empty")
-		return fmt.Errorf("internal error")
-	}
-
-	user.UUID = uuid
 	bsonData, err := bson.Marshal(user)
 	if err != nil {
 		log.Error("marshaling for save", zap.Error(err))

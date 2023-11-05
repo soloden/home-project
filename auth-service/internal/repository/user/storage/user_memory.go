@@ -2,7 +2,6 @@ package storage
 
 import (
 	"auth-service/internal/model"
-	"auth-service/internal/service/generation"
 	"context"
 	"fmt"
 	"sync"
@@ -19,9 +18,8 @@ func NewMemoryRepository() *memoryRepository {
 	}
 }
 
-func (r *memoryRepository) Create(ctx context.Context, mUser *model.User, idGen generation.IdGenerator) error {
+func (r *memoryRepository) Create(ctx context.Context, mUser *model.User) error {
 	data := mUser
-	data.UUID = idGen.Generate(ctx)
 
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
@@ -50,6 +48,7 @@ func (r *memoryRepository) GetByEmail(_ context.Context, _ string) *model.User {
 func (r *memoryRepository) GetByRefreshToken(_ context.Context, _ string) *model.User {
 	return nil
 }
+
 func (r *memoryRepository) SaveRefreshToken(_ context.Context, _ string, _ *model.Session) error {
 	return nil
 }

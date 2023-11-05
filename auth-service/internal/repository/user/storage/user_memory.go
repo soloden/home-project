@@ -2,7 +2,6 @@ package storage
 
 import (
 	"auth-service/internal/model"
-	"auth-service/internal/repository/user"
 	"auth-service/internal/service/generation"
 	"context"
 	"fmt"
@@ -10,17 +9,17 @@ import (
 )
 
 type memoryRepository struct {
-	data  map[string]*user.User
+	data  map[string]*model.User
 	mutex sync.RWMutex
 }
 
 func NewMemoryRepository() *memoryRepository {
 	return &memoryRepository{
-		data: make(map[string]*user.User),
+		data: make(map[string]*model.User),
 	}
 }
 
-func (r *memoryRepository) Create(ctx context.Context, mUser *user.User, idGen generation.IdGenerator) *user.User {
+func (r *memoryRepository) Create(ctx context.Context, mUser *model.User, idGen generation.IdGenerator) error {
 	data := mUser
 	data.UUID = idGen.Generate(ctx)
 
@@ -29,10 +28,10 @@ func (r *memoryRepository) Create(ctx context.Context, mUser *user.User, idGen g
 
 	r.data[data.UUID] = data
 	fmt.Println(r.data)
-	return data
+	return nil
 }
 
-func (r *memoryRepository) Get(_ context.Context, userUUID string) *user.User {
+func (r *memoryRepository) Get(_ context.Context, userUUID string) *model.User {
 	r.mutex.RLock()
 	defer r.mutex.Unlock()
 
@@ -44,11 +43,11 @@ func (r *memoryRepository) Get(_ context.Context, userUUID string) *user.User {
 	return nil
 }
 
-func (r *memoryRepository) GetByEmail(_ context.Context, _ string) *user.User {
+func (r *memoryRepository) GetByEmail(_ context.Context, _ string) *model.User {
 	return nil
 }
 
-func (r *memoryRepository) GetByRefreshToken(_ context.Context, _ string) *user.User {
+func (r *memoryRepository) GetByRefreshToken(_ context.Context, _ string) *model.User {
 	return nil
 }
 func (r *memoryRepository) SaveRefreshToken(_ context.Context, _ string, _ *model.Session) error {

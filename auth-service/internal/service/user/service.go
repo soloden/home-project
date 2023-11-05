@@ -1,7 +1,6 @@
 package user
 
 import (
-	"auth-service/internal/mapper"
 	"auth-service/internal/model"
 	"auth-service/internal/repository"
 	"auth-service/internal/service/auth"
@@ -41,15 +40,14 @@ func (us *userService) Create(ctx context.Context, user *model.User) (*model.Use
 		return nil, status.Error(codes.Internal, "something went wrong, please try later")
 	}
 
-	repUser := mapper.ToUserFromModel(user)
-	repUser.PasswordHash = hashPassword
+	user.PasswordHash = hashPassword
 
-	savedUser := us.userRepository.Create(ctx, repUser, generation.UUIDGeneration{})
-	if savedUser == nil {
+	err = us.userRepository.Create(ctx, user, generation.UUIDGeneration{})
+	if err != nil {
 		return nil, status.Error(codes.Internal, "something went wrong, please try later")
 	}
 
-	return mapper.ToUserFromRepository(savedUser), nil
+	return user, nil
 }
 
 func (us *userService) Auth(ctx context.Context, email, password string) (map[string]string, error) {
@@ -63,7 +61,7 @@ func (us *userService) Auth(ctx context.Context, email, password string) (map[st
 		return nil, status.Error(codes.InvalidArgument, "wrong password")
 	}
 
-	res, err := us.generateTokens(ctx, mapper.ToUserFromRepository(user))
+	res, err := us.generateTokens(ctx, user)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "something went wrong, please try later")
 	}
@@ -77,7 +75,7 @@ func (us *userService) RefreshToken(ctx context.Context, refreshToken string) (m
 		return nil, status.Error(codes.NotFound, "user not found")
 	}
 
-	res, err := us.generateTokens(ctx, mapper.ToUserFromRepository(user))
+	res, err := us.generateTokens(ctx, user)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "something went wrong, please try later")
 	}

@@ -3,12 +3,12 @@ package storage
 import (
 	"auth-service/internal/config"
 	"auth-service/internal/model"
-	"auth-service/internal/repository/user"
 	"auth-service/internal/service/generation"
 	"auth-service/pkg/logger"
 	pkgStorage "auth-service/pkg/storage/mongodb"
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -27,7 +27,7 @@ func NewMongodbRepository(cfg *config.Config, mongodb *pkgStorage.MongoDB) *mong
 	}
 }
 
-func (r *mongodbRepository) Create(ctx context.Context, user *user.User, idGen generation.IdGenerator) *user.User {
+func (r *mongodbRepository) Create(ctx context.Context, user *model.User, idGen generation.IdGenerator) error {
 	log := logger.LoggerFromContext(ctx)
 	if user.CreatedAt.IsZero() {
 		user.CreatedAt = time.Now()
@@ -40,27 +40,27 @@ func (r *mongodbRepository) Create(ctx context.Context, user *user.User, idGen g
 	uuid := idGen.Generate(ctx)
 	if uuid == "" {
 		log.Error("generated UUID is empty")
-		return nil
+		return fmt.Errorf("internal error")
 	}
 
 	user.UUID = uuid
 	bsonData, err := bson.Marshal(user)
 	if err != nil {
 		log.Error("marshaling for save", zap.Error(err))
-		return nil
+		return fmt.Errorf("internal error")
 	}
 
 	_, err = r.mCollection.InsertOne(ctx, bsonData)
 	if err != nil {
 		log.Error("inserting user", zap.Error(err))
-		return nil
+		return fmt.Errorf("internal error")
 	}
 
-	return user
+	return nil
 }
 
-func (r *mongodbRepository) Get(ctx context.Context, userUUID string) *user.User {
-	var modelUser user.User
+func (r *mongodbRepository) Get(ctx context.Context, userUUID string) *model.User {
+	var modelUser model.User
 
 	err := r.mCollection.FindOne(
 		ctx,
@@ -74,8 +74,8 @@ func (r *mongodbRepository) Get(ctx context.Context, userUUID string) *user.User
 	return &modelUser
 }
 
-func (r *mongodbRepository) GetByEmail(ctx context.Context, email string) *user.User {
-	var modelUser user.User
+func (r *mongodbRepository) GetByEmail(ctx context.Context, email string) *model.User {
+	var modelUser model.User
 	log := logger.LoggerFromContext(ctx)
 
 	err := r.mCollection.FindOne(
@@ -94,8 +94,8 @@ func (r *mongodbRepository) GetByEmail(ctx context.Context, email string) *user.
 	return &modelUser
 }
 
-func (r *mongodbRepository) GetByRefreshToken(ctx context.Context, token string) *user.User {
-	var modelUser user.User
+func (r *mongodbRepository) GetByRefreshToken(ctx context.Context, token string) *model.User {
+	var modelUser model.User
 
 	err := r.mCollection.FindOne(
 		ctx,

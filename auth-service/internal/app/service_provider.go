@@ -21,7 +21,7 @@ type serviceProvider struct {
 
 func (sp *serviceProvider) InitUserRepository() repository.UserRepository {
 	if sp.userRepository == nil {
-		cfg, _ := config.LoadConfig()
+		cfg := config.MustLoad()
 		switch cfg.App.StorageType {
 		case "mongodb":
 			sp.userRepository = storage.NewMongodbRepository(cfg, sp.InitMongoDBConnection(context.TODO()))

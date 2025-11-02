@@ -2,10 +2,10 @@ package main
 
 import (
 	pkgApp "auth-service/internal/app"
+	"auth-service/internal/config"
 	"context"
-	"flag"
 	"fmt"
-	"go.uber.org/zap"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,38 +14,35 @@ import (
 )
 
 func main() {
-	mode := flag.String("mode", "", "that flag declares mode to run service")
-	flag.Parse()
-	if err := run(*mode); err != nil {
+	if err := run(); err != nil {
 		panic(err)
 	}
 
 	os.Exit(1)
 }
 
-func run(mode string) error {
-	log := zap.Must(zap.NewProduction())
-	if mode == "development" {
-		log = zap.Must(zap.NewDevelopment())
-	}
+func run() error {
+	fmt.Println("starting auth service...")
+	cfg := config.MustLoad()
+	log := setupLogger(cfg.App.ENV)
 
-	app, err := pkgApp.NewApp(context.TODO())
+	app, err := pkgApp.NewApp(log)
 	if err != nil {
-		return fmt.Errorf("initialization app: %s", err)
+		return fmt.Errorf("initialization app failed: %s", err)
 	}
 
 	if err := app.Run(); err != nil {
-		return fmt.Errorf("running app: %s", err)
+		return fmt.Errorf("running app failed: %s", err)
 	}
 
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		_, err := w.Write([]byte("It is ok"))
 		if err != nil {
-			log.Error("body write error: %s", zap.Error(err))
+			log.Error("body write error: %s", err)
 		}
 	})
 
-	fmt.Println("start listening HTTP server on the 8080 port")
+	log.Info("start listening HTTP server on the 8080 port")
 	err = http.ListenAndServe(":8080", nil)
 	if err != nil {
 		return fmt.Errorf("problem with start HTTP server: %s", err)
@@ -54,7 +51,7 @@ func run(mode string) error {
 	// listen to OS signals and gracefully shutdown
 	stopped := make(chan struct{})
 	go func() {
-		sigint := make(chan os.Signal, 1)
+		sigint := make(chan os.Signal, 3)
 		signal.Notify(sigint, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 		<-sigint
 
@@ -67,4 +64,25 @@ func run(mode string) error {
 	}()
 	<-stopped
 	return nil
+}
+
+func setupLogger(env string) *slog.Logger {
+	var logger *slog.Logger
+
+	switch env {
+	case "production":
+		logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelInfo,
+		}))
+	case "development":
+		logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+		}))
+	case "local":
+		logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+		}))
+	}
+
+	return logger
 }

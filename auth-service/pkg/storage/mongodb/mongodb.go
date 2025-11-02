@@ -18,11 +18,12 @@ func NewClient(ctx context.Context) (*MongoDB, error) {
 	if mongoInstance != nil {
 		return mongoInstance, nil
 	}
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		return nil, fmt.Errorf("loading config: %s", err)
-	}
-	clientOptions := options.Client().ApplyURI(cfg.MongoDB.URL)
+	cfg := config.MustLoad()
+
+	mongoUrl := fmt.Sprintf("mongodb://%s:%s@%s:27017/", cfg.MongoDB.User, cfg.MongoDB.Pass, cfg.MongoDB.Host)
+	println(mongoUrl)
+
+	clientOptions := options.Client().ApplyURI(mongoUrl)
 
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {

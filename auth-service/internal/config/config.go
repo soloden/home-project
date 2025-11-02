@@ -11,24 +11,27 @@ type Config struct {
 		Addr string `env:"HTTP_PORT" env-default:":9000"`
 	}
 	MongoDB struct {
-		URL      string `env:"MONGODB_URL" env-default:"mongodb://user:pass@localhost:27017/"`
+		Host     string `env:"MONGODB_HOST" env-default:"mongo"`
+		User     string `env:"MONGODB_USER" env-default:"user"`
+		Pass     string `env:"MONGODB_PASS" env-default:"pass"`
 		Database string `env:"MONGODB_DATABASE" env-default:"test"`
 	}
 	App struct {
+		ENV         string `env:"APP_ENV" env-default:"development"`
 		StorageType string `env:"APP_STORAGE" env-default:"mongodb"`
-		SecretKey   string `env:SECRET_KEY env-default:"my_secret_key"`
+		SecretKey   string `env:"SECRET_KEY" env-default:"my_secret_key"`
 	}
 }
 
 var cfg Config
 
-func LoadConfig() (*Config, error) {
+func MustLoad() *Config {
 	if cfg == (Config{}) {
 		err := cleanenv.ReadEnv(&cfg)
 		if err != nil {
-			return nil, fmt.Errorf("problem with read env %s", err)
+			panic(fmt.Errorf("problem with read env %s", err))
 		}
 	}
 
-	return &cfg, nil
+	return &cfg
 }

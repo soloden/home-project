@@ -1,8 +1,7 @@
-version: '3'
-
 services:
   auth-service:
     build: ./auth-service/
+    container_name: auth-service
     depends_on:
       - mongo
     ports:
@@ -10,8 +9,7 @@ services:
 
   mongo:
     image: mongo
-    ports:
-      - 27017:27017
+    container_name: mongo
     environment:
       - MONGO_INITDB_ROOT_USERNAME=user
       - MONGO_INITDB_ROOT_PASSWORD=pass
@@ -20,9 +18,10 @@ services:
 
   mongo-express:
     image: mongo-express
+    container_name: mongo-gui
     restart: always
     environment:
-      ME_CONFIG_MONGODB_URL: "mongodb://user:pass@mongo:27017/?unhandled-rejections=strict"
+      ME_CONFIG_MONGODB_URL: "mongodb://user:pass@mongo:27017/"
       ME_CONFIG_MONGODB_ADMINUSERNAME: user
       ME_CONFIG_MONGODB_ADMINPASSWORD: pass
     depends_on:
